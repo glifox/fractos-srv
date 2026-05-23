@@ -42,6 +42,11 @@ async fn client(
     ws::start( Client::new(path.as_str(), conection.server.clone()), &req, stream, )
 }
 
+#[get("/is_alive")]
+async fn life_check() -> Result<HttpResponse, Error>  {
+    return Ok(HttpResponse::Accepted().finish())
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
@@ -75,6 +80,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .service(life_check)
             .app_data(web::Data::new(Conection { server: server.clone(), token: format!("{}-{}", username, password) }))
             .service(client)
     })
