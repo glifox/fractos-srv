@@ -26,7 +26,7 @@ impl Persistance {
             Ok(v) => _ = doc.import(&v),
             Err(e) => {
                 match e.kind() {
-                    ErrorKind::NotFound => (),
+                    ErrorKind::NotFound => log::debug!("{{ file: {}, error: {:?} }}", &path, e),
                     _ => log::error!("{{ file: {}, error: {:?} }}", &path, e),
                 }
             },
@@ -41,10 +41,14 @@ impl Handler<Disconnect> for Persistance {
 
     fn handle(&mut self, _: Disconnect, ctx: &mut Self::Context) -> Self::Result {
         let path = &self.path;
+        log::debug!("saving {path}");
         
         match self.doc.export(ExportMode::Snapshot) {
-            Ok(e) => _ = fs::write(&path, &e),
-            Err(e) => log::error!("{{ file: {}, error: {:?} }}", &path, e),
+            Ok(e) => match fs::write(&path, &e) {
+                Err(e) => log::error!("{{ file: {}, error: {:?} }}", &path, e),
+                _ => (),
+            },
+            Err(e) => log::error!("loro exporting error: {:#?}", e),
         };
         
         ctx.stop();

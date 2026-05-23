@@ -25,6 +25,7 @@ ENV PORT=3030
 ENV DIR=/data
 ENV RUST_LOG=warn
 
+RUN mkdir $DIR
 EXPOSE $PORT
 
 CMD ["app"]
