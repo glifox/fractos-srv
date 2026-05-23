@@ -2,9 +2,9 @@ mod persistante;
 
 use std::env;
 use env_logger;
-use actix::{Actor, Addr};
+use actix::{Actor, Addr, StreamHandler};
 use guitite::{Client, Server};
-use actix_web_actors::ws;
+use actix_web_actors::ws::{self, CloseCode, ProtocolError, Message as WsMessage};
 use actix_web::{App, Error, HttpRequest, HttpResponse, HttpServer, get, web};
 
 use crate::persistante::Persistance;
@@ -34,9 +34,11 @@ async fn client(
     
     if !is_valid {
         log::warn!("Intento de conexión no autorizado");
-        log::warn!("{expected}");
-        log::debug!("protocol: {:#?}", req.headers().get("sec-websocket-protocol"));
-        return Ok(HttpResponse::Unauthorized().finish());
+        log::debug!("{expected} != {:?}", req.headers().get("sec-websocket-protocol"));
+        return ws::start(Close {
+            code: 4001,
+            reason: format!("Unauthorized")
+        }, &req, stream);
     }
     
     ws::start( Client::new(path.as_str(), conection.server.clone()), &req, stream, )
@@ -88,4 +90,29 @@ async fn main() -> std::io::Result<()> {
     .bind(("0.0.0.0", port))?
     .run()
     .await
+}
+
+struct Close {
+    code: u16,
+    reason: String,
+}
+
+impl StreamHandler<Result<WsMessage, ProtocolError>> for Close {
+    fn handle(&mut self, _: Result<WsMessage, ProtocolError>, ctx: &mut Self::Context) {
+        ctx.close(Some(ws::CloseReason {
+            code: CloseCode::from(self.code), 
+            description: Some(self.reason.clone()),
+        }));
+    }
+}
+
+impl Actor for Close {
+    type Context = ws::WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.close(Some(ws::CloseReason {
+            code: CloseCode::from(self.code), 
+            description: Some(self.reason.clone()),
+        }));
+    }
 }
