@@ -10,5 +10,19 @@ config:
 - `PORT`: The port of the server to listen.
 - `DIR`: where the loro documents are going to be save.
 
+## docker
+
+The default configuration for docker is 
+- `USER_NAME`: `admin`
+- `USER_PASW`: `password`
+- `PORT`: `3030`
+- `DIR`: `/data`
+
+to test it run:
+~~~bash
+docker run --rm -t -e RUST_LOG=debug -p 3030:3030 ghcr.io/glifox/fractos-srv
+~~~
+
+
 ---
 `1` It was not realy a fast implementation, becouse i have developing the tools to get here for quite some time.
